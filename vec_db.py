@@ -9,7 +9,6 @@ import pickle
 DB_SEED_NUMBER = 42
 ELEMENT_SIZE = np.dtype(np.float32).itemsize
 DIMENSION = 70
-class CustomIndex: pass
 
 class VecDB:
     def __init__(self, database_file_path = "saved_db.dat", index_file_path = "index.dat", new_db = True, db_size = None) -> None:
@@ -76,11 +75,11 @@ class VecDB:
         query = query.ravel()  # Flattens the query to 1D
         num_records = self._get_num_records()
         file = open(self.index_path,'rb')
-        index = pickle.load(file)
+        x = pickle.load(file)
         file.close()
 
-        cluster_centers=index.centroids
-        labels_list=index.labels_list
+        cluster_centers=x.centroids
+        labels_list=x.labels_list
         for i,vec in enumerate(cluster_centers):
             score=self._cal_score(query,vec)
             scores.append((score,i))
@@ -152,12 +151,14 @@ class VecDB:
             for i, label in enumerate(labels):
                 labels_list[label].append(i)
             
-            CustomIndex.centroids=cluster_centers
-            CustomIndex.labels_list=labels_list
-            
-            filehandler = open(self.index_path,"wb")
-            pickle.dump(CustomIndex,filehandler)
-            filehandler.close()
+            # Save index data as a dictionary
+            index_data = {
+                "centroids": cluster_centers,
+                "labels_list": labels_list,
+            }
+
+            with open(self.index_path, "wb") as file:
+                pickle.dump(index_data, file)
 
             # print(object_file.centroids, object_file.labels_list, sep=', ')
             # Print Clustering Results
