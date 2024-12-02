@@ -1,0 +1,6 @@
+Requirement already satisfied: memory-profiler in d:\programs\anaconda3\lib\site-packages (0.61.0)
+Requirement already satisfied: psutil in d:\programs\anaconda3\lib\site-packages (from memory-profiler) (5.9.0)
+Requirement already satisfied: memory-profiler in d:\programs\anaconda3\lib\site-packages (0.61.0)
+Requirement already satisfied: psutil in d:\programs\anaconda3\lib\site-packages (from memory-profiler) (5.9.0)
+Requirement already satisfied: memory-profiler in d:\programs\anaconda3\lib\site-packages (0.61.0)
+Requirement already satisfied: psutil in d:\programs\anaconda3\lib\site-packages (from memory-profiler) (5.9.0)
