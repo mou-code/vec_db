@@ -3,6 +3,7 @@ import numpy as np
 import os
 from sklearn.cluster import KMeans
 import pickle
+import math
 
 DB_SEED_NUMBER = 42
 ELEMENT_SIZE = np.dtype(np.float32).itemsize
@@ -66,28 +67,31 @@ class VecDB:
         file = open(self.index_path,'rb')
         x = pickle.load(file)
         file.close()
+        
         cluster_centers = x["centroids"]
         labels_list = x["labels_list"]
         for i,vec in enumerate(cluster_centers):
             score=self._cal_score(query,vec)
             scores.append((score,i))
 
-        n_probe = 5
+        n_probe = 6
         cluster_scores = sorted(scores, reverse=True)[:n_probe]
         # Get the vectors of nearest clusters
         top_vector=[]
         # for item in scores:
-        top_vector.append(labels_list[cluster_scores[0][1]])
+        for i in range(n_probe):
+            top_vector.append(labels_list[cluster_scores[i][1]])
+
         # print("top_vector",top_vector[0])
-        
         # store the vectors of the top cluster
         resulted_vectors=[]
         #loop over top_vectors and cosine similarity
-        for row_num in top_vector[0]:
-            vector = self.get_one_row(row_num)
-            vector = vector.ravel()  # Flattens the vector to 1D
-            score = self._cal_score(query, vector)
-            resulted_vectors.append((score,row_num))
+        for i in range(n_probe):
+            for row_num in top_vector[i]:
+                vector = self.get_one_row(row_num)
+                vector = vector.ravel()  # Flattens the vector to 1D
+                score = self._cal_score(query, vector)
+                resulted_vectors.append((score,row_num))
         # Sort by scores and keep only top_k results
         resulted_vectors = sorted(resulted_vectors, reverse=True)[:top_k]
         # print(resulted_vectors)
@@ -102,7 +106,8 @@ class VecDB:
         cosine_similarity = dot_product / (norm_vec1 * norm_vec2)
         return cosine_similarity
 
-    def configure_clusters(num_records):
+    def _configure_clusters(self):
+        num_records = self._get_num_records()
         match num_records:
             case 1_000_000:
                 n_clusters = 256
@@ -117,20 +122,22 @@ class VecDB:
              
     def _build_index(self):
             vectors = self.get_all_rows()
-
+            chunk_size=10**6
+            no_chunks=math.ceil(self._get_num_records()/chunk_size)
             # Step 1: Coarse Quantization (Clustering)
-            num_records = self._get_num_records()
-            n_clusters = self.configure_clusters(num_records)               
-             
+            n_clusters = self._configure_clusters()               
+            
             kmeans = KMeans(n_clusters)
-            labels = kmeans.fit_predict(vectors)  # Assign each vector to a cluster
+            kmeans.fit(vectors[:1*10**6])
             cluster_centers = kmeans.cluster_centers_
+            # for i in range(no_chunks):
+            labels = kmeans.predict(vectors)  # Assign each vector to a cluster
             
             # Step 2: Construct Posting Lists
             labels_list = {i: [] for i in range(n_clusters)}  # Two clusters: 0 and 1
             for i, label in enumerate(labels):
                 labels_list[label].append(i)
-            
+            print("labels=",labels_list)
             # Save index data as a dictionary
             index_data = {
                 "centroids": cluster_centers,
@@ -139,5 +146,3 @@ class VecDB:
 
             with open(self.index_path, "wb") as file:
                 pickle.dump(index_data, file)
-
-

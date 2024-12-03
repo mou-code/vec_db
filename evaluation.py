@@ -55,9 +55,15 @@ def eval(results: List[Result]):
 
 if __name__ == "__main__":
     
-    db = VecDB(db_size = 10**6, database_file_path = "saved_db_1M.dat", index_file_path = "saved_db_1m.csv", new_db = True)
+    db1 = VecDB(db_size = 1000000, database_file_path = "saved_db_10M.dat", index_file_path = "saved_db_10m.csv", new_db = True)
 
-    all_db = db.get_all_rows()
+    # db1 = VecDB(db_size = 10000000, database_file_path = "saved_db_10M.dat", index_file_path = "saved_db_10m.csv", new_db = True)
 
-    res = run_queries(db, all_db, 5, 10)
-    print(eval(res))
+    # db2 = VecDB(db_size = 15000000, database_file_path = "saved_db_15M.dat", index_file_path = "saved_db_15m.csv", new_db = True)
+    
+    # db3 = VecDB(db_size = 20000000, database_file_path = "saved_db_20M.dat", index_file_path = "saved_db_20m.csv", new_db = True)
+
+    # all_db = db.get_all_rows()
+
+    # res = run_queries(db, all_db, 5, 10)
+    # print(eval(res))
