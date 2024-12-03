@@ -102,11 +102,26 @@ class VecDB:
         cosine_similarity = dot_product / (norm_vec1 * norm_vec2)
         return cosine_similarity
 
+    def configure_clusters(num_records):
+        match num_records:
+            case 1_000_000:
+                n_clusters = 256
+            case 10_000_000:
+                n_clusters = 2560
+            case 15_000_000:
+                n_clusters = 3750
+            case 20_000_000:
+                n_clusters = 5000
+        print(f"Number of clusters: {n_clusters}")
+        return n_clusters  
+             
     def _build_index(self):
             vectors = self.get_all_rows()
 
             # Step 1: Coarse Quantization (Clustering)
-            n_clusters=256
+            num_records = self._get_num_records()
+            n_clusters = self.configure_clusters(num_records)               
+             
             kmeans = KMeans(n_clusters)
             labels = kmeans.fit_predict(vectors)  # Assign each vector to a cluster
             cluster_centers = kmeans.cluster_centers_
