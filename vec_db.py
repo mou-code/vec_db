@@ -112,7 +112,7 @@ class VecDB:
         index_path_level1=f"level1_centroids_{self.index_path}"
 
         if num_records == 10**6:
-           n_probe =15
+           n_probe =20
         elif num_records ==10**7:
           n_probe=11
         elif num_records == 15*10**6:
