@@ -8,9 +8,10 @@ def build_index_level_1_clustering(vectors,n_clusters,index_path):
     chunk_size=10**6
     firstlevel_nclusters = n_clusters
     kmeans = MiniBatchKMeans(
+                n_init=10,
                 n_clusters=firstlevel_nclusters,
-                batch_size=10,  # Smaller batch size
-                max_iter=300  # Fewer iterations
+                batch_size=10**4,  # Smaller batch size
+                max_iter=500  # Fewer iterations
                 )
     kmeans.fit(vectors[:10**6])
     # cluster_centers_level1 = kmeans.cluster_centers_
@@ -59,9 +60,11 @@ def build_index_level_2_clustering(vectors,labels_list,index_path):
         # number of clusters in level 2 within each cluster of level1=root(#vectors in cluster)
         length_vectors=len(labels_list[cluster_idx])
         kmeans_dict[cluster_idx] = MiniBatchKMeans(
+            n_init=10,
+            batch_size=10**4,  # Smaller batch size
+            max_iter=500,
             n_clusters=int(math.sqrt(length_vectors)),
-            batch_size=10,
-            max_iter=300
+
         )
     # print("labels_list",labels_list)
     # chunk_size_level_2=10
