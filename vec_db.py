@@ -1,9 +1,12 @@
 from typing import Dict, List, Annotated
 import numpy as np
 import os
-from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
+from joblib import Parallel, delayed
 import pickle
 import math
+from heapq import heappush, heappop
+from IVF_Multi_level import build_index_level_1_clustering,build_index_level_2_clustering
 
 DB_SEED_NUMBER = 42
 ELEMENT_SIZE = np.dtype(np.float32).itemsize
@@ -59,46 +62,94 @@ class VecDB:
         num_records = self._get_num_records()
         vectors = np.memmap(self.db_path, dtype=np.float32, mode='r', shape=(num_records, DIMENSION))
         return np.array(vectors)
-    
+
+    def level_2_query(self,file_path,query,n_probes,top_k_heap):
+        file = open(file_path,'rb')
+        level2_data_loaded = pickle.load(file)
+        file.close()
+
+        num_records=self._get_num_records()
+        level2_centroids_loaded=level2_data_loaded["centroids"]
+        level2_labels_loaded=level2_data_loaded["labels_list"]
+        # print("level2_labels_loaded",level2_labels_loaded)
+        nearest_centroids_level_2 = sorted([(np.linalg.norm(query - centroid),i) for i,centroid in enumerate(level2_centroids_loaded)])
+        n_probe_l2=min(n_probes,len(nearest_centroids_level_2))
+        # print("nearest_centroids_level_2",nearest_centroids_level_2)
+        nearest_centroids_level_2=nearest_centroids_level_2[:n_probe_l2]
+        # print(nearest_centroids_level_2)
+
+        batch_size=100
+        for _,centroid_idx_l2 in nearest_centroids_level_2:
+           # Check if centroid_idx_l2 exists as a key in level2_labels_loaded
+          if centroid_idx_l2 in level2_labels_loaded:
+            row_indices = sorted(level2_labels_loaded[centroid_idx_l2]) 
+            rows_length=len(row_indices)
+            # Get data of cluster in batches
+            for start_i in range(0, rows_length, batch_size):
+              end_i = min(start_i + batch_size, rows_length)
+              subset_indices = row_indices[start_i:end_i]
+              # Get first vector number in the batch to be the offset to start from 
+              start_offset = subset_indices[0] * DIMENSION * ELEMENT_SIZE
+              # To get the shape of the part to point at in data file
+              remaining_records = num_records - subset_indices[0]
+              mmap_vectors = np.memmap(self.db_path,dtype=np.float32,mode='r',shape=(remaining_records, DIMENSION),
+              offset=start_offset)
+
+              # As in returned memmap the indices are numbered 0 starting from start offset
+              relative_indices = np.array(subset_indices) - subset_indices[0]
+              cluster_vectors = mmap_vectors[relative_indices]
+              # print("l",level2_labels_loaded[centroid_idx_l2])
+              for vec_num, vector in zip(subset_indices, cluster_vectors):
+                  score=self._cal_score(vector,query)
+                  heappush(top_k_heap, (-score, vec_num))
+        return top_k_heap
+
     def retrieve(self, query: Annotated[np.ndarray, (1, DIMENSION)], top_k = 5):
         scores = []
         query = query.ravel()  # Flattens the query to 1D
         num_records = self._get_num_records()
-        file = open(self.index_path,'rb')
-        x = pickle.load(file)
+        folder_path = f"second_level_centroids_{self.index_path}"
+        index_path_level1=f"level1_centroids_{self.index_path}"
+
+        if num_records == 10**6:
+           n_probe =7
+        elif num_records ==10**7:
+          n_probe=11
+        elif num_records == 15*10**6:
+          n_probe=16
+        else: n_probe=20
+        # print("n_probe=",n_probe)
+        # 1. Getting nearest centroids in first level
+        #get index data
+        file = open(index_path_level1,'rb')
+        level1_centroids_loaded = pickle.load(file)["centroids"]
         file.close()
-        
-        cluster_centers = x["centroids"]
-        labels_list = x["labels_list"]
-        for i,vec in enumerate(cluster_centers):
-            score=self._cal_score(query,vec)
-            scores.append((score,i))
+        # print("level1_centroids",level1_centroids_loaded)
+        nearest_centroids = sorted([(np.linalg.norm(query - centroid),i) for i,centroid in enumerate(level1_centroids_loaded)])
+        # print(nearest_centroids)
+        nearest_centroids=nearest_centroids[:n_probe]
 
-        n_probe = 6
-        cluster_scores = sorted(scores, reverse=True)[:n_probe]
-        # Get the vectors of nearest clusters
-        top_vector=[]
-        # for item in scores:
-        for i in range(n_probe):
-            top_vector.append(labels_list[cluster_scores[i][1]])
-
-        # print("top_vector",top_vector[0])
-        # store the vectors of the top cluster
-        resulted_vectors=[]
-        #loop over top_vectors and cosine similarity
-        for i in range(n_probe):
-            for row_num in top_vector[i]:
-                vector = self.get_one_row(row_num)
-                vector = vector.ravel()  # Flattens the vector to 1D
-                score = self._cal_score(query, vector)
-                resulted_vectors.append((score,row_num))
-        # Sort by scores and keep only top_k results
-        resulted_vectors = sorted(resulted_vectors, reverse=True)[:top_k]
-        # print(resulted_vectors)
-        # Extract only the row_num from resulted_vectors
+        # 2. Getting nearest centroids in second level
+        top_k_heap=[]
+        if num_records == 10**6:
+           n_probes_l2 =20
+        elif num_records ==10**7:
+          n_probes_l2=130
+        elif num_records == 15*10**6:
+          n_probes_l2=300
+        else: n_probes_l2=20
+        for _,centroid_idx in nearest_centroids:
+            # print("cluster num#",centroid_idx)
+            # now within a cluster, let's open file of the cluster
+            file_path=f"{folder_path}/level2_centroids_cluster{centroid_idx}"
+            if not os.path.exists(file_path): # no data in this centroid from level1
+              continue
+            top_k_heap=self.level_2_query(file_path,query,n_probes_l2,top_k_heap)
+    
+        resulted_vectors = top_k_heap[:top_k]  # Restore original score
         row_nums = [row_num for _, row_num in resulted_vectors]
-
-        return row_nums  # Return only row_num values    
+        return row_nums  # Return only row_num values   
+         
     def _cal_score(self, vec1, vec2):
         dot_product = np.dot(vec1, vec2)
         norm_vec1 = np.linalg.norm(vec1)
@@ -112,37 +163,18 @@ class VecDB:
             case 1_000_000:
                 n_clusters = 256
             case 10_000_000:
-                n_clusters = 2560
+                n_clusters = 2600
             case 15_000_000:
                 n_clusters = 3750
             case 20_000_000:
-                n_clusters = 5000
+                n_clusters = 4400
         print(f"Number of clusters: {n_clusters}")
-        return n_clusters  
-             
+        return n_clusters
+    
     def _build_index(self):
             vectors = self.get_all_rows()
             chunk_size=10**6
-            no_chunks=math.ceil(self._get_num_records()/chunk_size)
             # Step 1: Coarse Quantization (Clustering)
             n_clusters = self._configure_clusters()               
+            build_index_level_2_clustering(vectors,build_index_level_1_clustering(vectors,n_clusters,self.index_path),self.index_path)
             
-            kmeans = KMeans(n_clusters)
-            kmeans.fit(vectors[:1*10**6])
-            cluster_centers = kmeans.cluster_centers_
-            # for i in range(no_chunks):
-            labels = kmeans.predict(vectors)  # Assign each vector to a cluster
-            
-            # Step 2: Construct Posting Lists
-            labels_list = {i: [] for i in range(n_clusters)}  # Two clusters: 0 and 1
-            for i, label in enumerate(labels):
-                labels_list[label].append(i)
-            print("labels=",labels_list)
-            # Save index data as a dictionary
-            index_data = {
-                "centroids": cluster_centers,
-                "labels_list": labels_list,
-            }
-
-            with open(self.index_path, "wb") as file:
-                pickle.dump(index_data, file)
