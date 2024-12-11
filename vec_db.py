@@ -108,8 +108,9 @@ class VecDB:
         scores = []
         query = query.ravel()  # Flattens the query to 1D
         num_records = self._get_num_records()
-        folder_path = f"second_level_centroids_{self.index_path}"
-        index_path_level1=f"level1_centroids_{self.index_path}"
+        saved_db_name=self.index_path[:-4]
+        folder_path = f"{saved_db_name}/second_level_centroids_{self.index_path}"
+        index_path_level1=f"{saved_db_name}/level1_centroids_{self.index_path}"
 
         if num_records == 10**6:
            n_probe =20
