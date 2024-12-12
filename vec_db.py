@@ -119,7 +119,7 @@ class VecDB:
         elif num_records == 15*10**6:
           n_probe=20
         elif num_records==20*10**6:
-            n_probe=55
+            n_probe=20
         # print("n_probe=",n_probe)
         # 1. Getting nearest centroids in first level
         #get index data
@@ -140,7 +140,7 @@ class VecDB:
         elif num_records == 15*10**6:
           n_probes_l2=310
         elif num_records==20*10**6:
-            n_probes_l2=700
+            n_probes_l2=30
         for _,centroid_idx in nearest_centroids:
             # print("cluster num#",centroid_idx)
             # now within a cluster, let's open file of the cluster
