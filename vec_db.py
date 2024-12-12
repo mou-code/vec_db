@@ -78,7 +78,7 @@ class VecDB:
         nearest_centroids_level_2=nearest_centroids_level_2[:n_probe_l2]
         # print(nearest_centroids_level_2)
 
-        batch_size=100
+        batch_size=400
         for _,centroid_idx_l2 in nearest_centroids_level_2:
            # Check if centroid_idx_l2 exists as a key in level2_labels_loaded
           if centroid_idx_l2 in level2_labels_loaded:
