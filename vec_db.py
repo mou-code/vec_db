@@ -123,7 +123,7 @@ class VecDB:
         elif num_records ==10**7:
           n_probe=85
         elif num_records == 15*10**6:
-          n_probe=120
+          n_probe=80
         elif num_records==20*10**6:
             n_probe=80
         # print("n_probe=",n_probe)
@@ -150,7 +150,7 @@ class VecDB:
         elif num_records ==10**7:
           n_probes_l2=30
         elif num_records == 15*10**6:
-          n_probes_l2=80
+          n_probes_l2=40
         elif num_records==20*10**6:
             n_probes_l2=40
         for _,centroid_idx in nearest_centroids:
