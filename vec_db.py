@@ -180,7 +180,7 @@ class VecDB:
             case 10_000_000:
                 n_clusters = 5000
             case 15_000_000:
-                n_clusters = 8000
+                n_clusters = 4400
             case 20_000_000:
                 n_clusters = 10000
         print(f"Number of clusters: {n_clusters}")
