@@ -119,7 +119,7 @@ class VecDB:
         elif num_records == 15*10**6:
           n_probe=20
         elif num_records==20*10**6:
-            n_probe=6
+            n_probe=5
         # print("n_probe=",n_probe)
         # 1. Getting nearest centroids in first level
         #get index data
