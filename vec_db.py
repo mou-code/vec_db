@@ -176,7 +176,7 @@ class VecDB:
         num_records = self._get_num_records()
         match num_records:
             case 1_000_000:
-                n_clusters = 265
+                n_clusters = 256
             case 10_000_000:
                 n_clusters = 5000
             case 15_000_000:
