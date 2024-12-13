@@ -80,7 +80,7 @@ class VecDB:
         if num_records==20*10**6:
             batch_size=500
         else:
-            batch_size=400
+            batch_size=300
         for _,centroid_idx_l2 in nearest_centroids_level_2:
            # Check if centroid_idx_l2 exists as a key in level2_labels_loaded
           if centroid_idx_l2 in level2_labels_loaded:
