@@ -77,7 +77,9 @@ class VecDB:
         # print("nearest_centroids_level_2",nearest_centroids_level_2)
         nearest_centroids_level_2=nearest_centroids_level_2[:n_probe_l2]
         # print(nearest_centroids_level_2)
-
+        if num_records==20*10**6:
+            batch_size=500
+        else:
         batch_size=100
         for _,centroid_idx_l2 in nearest_centroids_level_2:
            # Check if centroid_idx_l2 exists as a key in level2_labels_loaded
@@ -119,7 +121,7 @@ class VecDB:
         elif num_records == 15*10**6:
           n_probe=20
         elif num_records==20*10**6:
-            n_probe=5
+            n_probe=6
         # print("n_probe=",n_probe)
         # 1. Getting nearest centroids in first level
         #get index data
