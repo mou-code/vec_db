@@ -121,7 +121,7 @@ class VecDB:
         if num_records == 10**6:
            n_probe =50
         elif num_records ==10**7:
-          n_probe=85
+          n_probe=80
         elif num_records == 15*10**6:
           n_probe=78
         elif num_records==20*10**6:
