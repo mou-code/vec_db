@@ -136,7 +136,7 @@ class VecDB:
         # 2. Getting nearest centroids in second level
         top_k_heap=[]
         if num_records == 10**6:
-           n_probes_l2 =10
+           n_probes_l2 =20
         elif num_records ==10**7:
           n_probes_l2=170
         elif num_records == 15*10**6:
