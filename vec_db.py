@@ -115,7 +115,7 @@ class VecDB:
         index_path_level1=f"{saved_db_name}/level1_centroids_{self.index_path}"
 
         if num_records == 10**6:
-           n_probe =10
+           n_probe =30
         elif num_records ==10**7:
           n_probe=30
         elif num_records == 15*10**6:
@@ -136,7 +136,7 @@ class VecDB:
         # 2. Getting nearest centroids in second level
         top_k_heap=[]
         if num_records == 10**6:
-           n_probes_l2 =50
+           n_probes_l2 =10
         elif num_records ==10**7:
           n_probes_l2=170
         elif num_records == 15*10**6:
